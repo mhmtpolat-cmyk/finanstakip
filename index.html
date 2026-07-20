@@ -638,5 +638,30 @@
 
     initializeSelects(); updateDashboard();
 </script>
+    <script>
+    // --- KULLANICI GİRİŞ KONTROLÜ ---
+    const ADMIN_USER = "admin"; // Kendi kullanıcı adını buraya yazabilirsin
+    const ADMIN_PASS = "12345"; // Kendi şifreni buraya yazabilirsin
+
+    function handleLogin() {
+        const u = document.getElementById('login-username').value;
+        const p = document.getElementById('login-password').value;
+        
+        if(u === ADMIN_USER && p === ADMIN_PASS) {
+            document.getElementById('login-overlay').style.display = 'none';
+            sessionStorage.setItem('isLoggedIn', 'true');
+        } else {
+            alert("Kullanıcı adı veya şifre hatalı!");
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if(sessionStorage.getItem('isLoggedIn') === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+    });
+
+    // --- BURADAN SONRA MEVCUT STATE MANAGEMENT KODLARIN BAŞLIYOR ---
+    let accounts = [ ... ];
 </body>
 </html>
