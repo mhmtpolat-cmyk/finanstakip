@@ -638,18 +638,23 @@
 
     initializeSelects(); updateDashboard();
 </script>
-    <script>
-    // --- KULLANICI GİRİŞ KONTROLÜ ---
-    const ADMIN_USER = "admin"; // Kendi kullanıcı adını buraya yazabilirsin
-    const ADMIN_PASS = "12345"; // Kendi şifreni buraya yazabilirsin
+   <script>
+    // --- ÇOKLU KULLANICI GİRİŞ KONTROLÜ ---
+    const allowedUsers = [
+        { username: "Mehmet", password: "1086" },
+        { username: "Serhat", password: "0211" }
+    ];
 
     function handleLogin() {
-        const u = document.getElementById('login-username').value;
-        const p = document.getElementById('login-password').value;
+        const u = document.getElementById('login-username').value.trim();
+        const p = document.getElementById('login-password').value.trim();
         
-        if(u === ADMIN_USER && p === ADMIN_PASS) {
+        const isValid = allowedUsers.some(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
+
+        if(isValid) {
             document.getElementById('login-overlay').style.display = 'none';
             sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('currentUser', u);
         } else {
             alert("Kullanıcı adı veya şifre hatalı!");
         }
@@ -661,7 +666,6 @@
         }
     });
 
-    // --- BURADAN SONRA MEVCUT STATE MANAGEMENT KODLARIN BAŞLIYOR ---
-    let accounts = [ ... ];
+    // --- DEVAMI MEVCUT KODLAR... ---
 </body>
 </html>
