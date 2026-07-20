@@ -1,4 +1,4 @@
-<!-- Giriş Ekranı (HTML'in en üstüne eklenecek) -->
+<!-- Giriş Ekranı -->
 <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <div class="text-center">
@@ -56,7 +56,7 @@
 
 <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
     
-    <!-- Üst Header (Mobil Uyumlu) -->
+    <!-- Üst Header -->
     <div class="flex flex-col lg:flex-row justify-between items-center glass-panel p-4 md:p-5 rounded-2xl shadow-sm gap-3">
         <h1 class="text-lg md:text-2xl font-bold text-slate-800 flex items-center cursor-pointer w-full lg:w-auto justify-between lg:justify-start" onclick="switchView('dashboard')">
             <span class="flex items-center">
@@ -65,7 +65,6 @@
                 </div>
                 Finans Yönetimi
             </span>
-            <!-- Mobil için hızlı mail butonu -->
             <button onclick="sendManualEmail()" class="lg:hidden bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-emerald-200">
                 <i class="fa-solid fa-envelope"></i> Mail At
             </button>
@@ -86,10 +85,10 @@
         </div>
     </div>
 
-    <!-- ================= ANA SAYFA ================= -->
+    <!-- ANA SAYFA -->
     <div id="main-dashboard-view" class="space-y-4 md:space-y-6 block view-section">
         
-        <!-- Toplam Varlık Özet Kartları -->
+        <!-- Varlık Özet Kartları -->
         <div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 md:p-6 rounded-2xl shadow-sm border border-indigo-100/50">
             <h2 class="text-sm md:text-base font-semibold text-indigo-900/70 mb-3 flex items-center">
                 <i class="fa-solid fa-earth-americas mr-2 text-indigo-400"></i> 
@@ -118,9 +117,8 @@
         <!-- Hesaplar Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="accounts-dashboard"></div>
 
-        <!-- Borçlar ve Nakit Girişleri Yan Yana / Alt Alta -->
+        <!-- Borçlar ve Nakit Girişleri -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <!-- Verilen Borçlar -->
             <div onclick="switchView('debts')" class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col cursor-pointer hover:shadow-md transition group">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -140,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- Nakit Girişleri -->
             <div onclick="switchView('inflows')" class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col cursor-pointer hover:shadow-md transition group">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -161,7 +158,7 @@
             </div>
         </div>
 
-        <!-- Tüm İşlemler Tablosu ve Filtreler -->
+        <!-- İşlem Hareketleri Tablosu -->
         <div id="transaction-section" class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
             <div class="p-4 md:p-5 border-b border-slate-50 flex flex-col xl:flex-row gap-3 justify-between items-center bg-slate-50/50">
                 <h2 class="text-sm md:text-md font-bold text-slate-700 w-full xl:w-auto">İşlem Hareketleri</h2>
@@ -199,7 +196,7 @@
         </div>
     </div>
 
-    <!-- Diğer Detay Görünümleri -->
+    <!-- Detay Görünümleri -->
     <div id="debts-detail-view" class="space-y-4 hidden view-section">
         <div class="flex justify-between items-center"><button onclick="switchView('dashboard')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Geri Dön</button><div class="flex gap-2"><select id="debts-filter-currency" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderDebtsView()"><option value="ALL">Tüm Dövizler</option><option value="TRY">TL</option><option value="USD">Dolar</option><option value="EUR">Euro</option><option value="CHF">Frank</option></select><select id="debts-filter-contact" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderDebtsView()"></select><button onclick="generatePDF('debts-pdf-container', 'Verilen_Borclar')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
         <div id="debts-pdf-container" class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
@@ -281,7 +278,6 @@
 </div>
 
 <script>
-    // --- GİRİŞ KONTROLÜ VE VERİTABANI BAĞLANTISI ---
     const allowedUsers = [
         { username: "Mehmet", password: "1086" },
         { username: "Serhat", password: "0211" }
@@ -330,14 +326,12 @@
     let editingContactId = null; 
     let monthlyChartInstance = null;
 
-    // --- BULUT (API) SENKRONİZASYONU ---
     async function loadDataFromCloud() {
         try {
             const response = await fetch('/api');
             const result = await response.json();
             if (result.success && result.data) {
                 transactions = result.data.map(item => item.data).filter(Boolean);
-                // Eğer veritabanında cariler veya hesaplar da saklandıysa buradan çekilebilir, şimdilik işlemler ana veri kaynağıdır.
             }
         } catch (e) {
             console.error("Buluttan veri çekilemedi:", e);
@@ -367,7 +361,38 @@
     const getContactName = (id) => { const contact = contacts.find(c => c.id == id); return contact ? contact.name : ''; };
 
     function sendManualEmail() {
-        alert("Rapor e-posta adresinize gönderildi!");
+        const today = new Date().toLocaleDateString('tr-TR');
+        const subject = encodeURIComponent(`Finansal Durum - ${today}`);
+
+        let totalWealthTRY = 0;
+        const balances = {};
+        accounts.forEach(acc => { balances[acc.id] = { 'TRY': 0, 'USD': 0, 'EUR': 0, 'CHF': 0 }; });
+
+        transactions.forEach(t => {
+            if (t.type === 'IN') balances[t.account][t.currency] += t.amount;
+            else if (t.type === 'OUT') balances[t.account][t.currency] -= t.amount;
+            else if (t.type === 'TRANSFER') {
+                balances[t.account][t.currency] -= t.amount;
+                if(balances[t.targetAccount]) balances[t.targetAccount][t.currency] += t.amount;
+            }
+        });
+
+        accounts.forEach(acc => {
+            currencies.forEach(cur => {
+                totalWealthTRY += balances[acc.id][cur] * exchangeRates[cur];
+            });
+        });
+
+        let bodyText = `Merhaba,\n\n${today} tarihi itibarıyla güncel finansal durum özetimiz aşağıdadır:\n\n`;
+        bodyText += `--- TOPLAM VARLIKLAR ---\n`;
+        bodyText += `• TL Karşılığı: ${formatMoney(totalWealthTRY, 'TRY')}\n`;
+        bodyText += `• Dolar Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['USD'], 'USD')}\n`;
+        bodyText += `• Euro Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['EUR'], 'EUR')}\n`;
+        bodyText += `• Frank Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['CHF'], 'CHF')}\n\n`;
+        bodyText += `Son Eklenen İşlemler ve Detaylar için sisteme giriş yapabilirsiniz.\n\nİyi çalışmalar.`;
+
+        const body = encodeURIComponent(bodyText);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
     }
 
     function switchView(viewName) {
@@ -684,7 +709,7 @@
         const newTransaction = { id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category };
         
         transactions.push(newTransaction);
-        saveDataToCloud(newTransaction); // Buluta gönder
+        saveDataToCloud(newTransaction);
         
         closeModal('transactionModal'); 
         updateDashboard();
@@ -697,46 +722,5 @@
         initializeSelects(); updateDashboard(); closeModal('bankModal');
     }
 </script>
-    function sendManualEmail() {
-        // O günün tarihini al (Örn: 20.07.2026)
-        const today = new Date().toLocaleDateString('tr-TR');
-        
-        // E-posta konusu
-        const subject = encodeURIComponent(`Finansal Durum - ${today}`);
-
-        // Genel varlık özetini hesapla
-        let totalWealthTRY = 0;
-        const balances = {};
-        accounts.forEach(acc => { balances[acc.id] = { 'TRY': 0, 'USD': 0, 'EUR': 0, 'CHF': 0 }; });
-
-        transactions.forEach(t => {
-            if (t.type === 'IN') balances[t.account][t.currency] += t.amount;
-            else if (t.type === 'OUT') balances[t.account][t.currency] -= t.amount;
-            else if (t.type === 'TRANSFER') {
-                balances[t.account][t.currency] -= t.amount;
-                if(balances[t.targetAccount]) balances[t.targetAccount][t.currency] += t.amount;
-            }
-        });
-
-        accounts.forEach(acc => {
-            currencies.forEach(cur => {
-                totalWealthTRY += balances[acc.id][cur] * exchangeRates[cur];
-            });
-        });
-
-        // Mailin içine yazılacak şık metin taslağı
-        let bodyText = `Merhaba,\n\n${today} tarihi itibarıyla güncel finansal durum özetimiz aşağıdadır:\n\n`;
-        bodyText += `--- TOPLAM VARLIKLAR ---\n`;
-        bodyText += `• TL Karşılığı: ${formatMoney(totalWealthTRY, 'TRY')}\n`;
-        bodyText += `• Dolar Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['USD'], 'USD')}\n`;
-        bodyText += `• Euro Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['EUR'], 'EUR')}\n`;
-        bodyText += `• Frank Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['CHF'], 'CHF')}\n\n`;
-        bodyText += `Son Eklenen İşlemler ve Detaylar için sisteme giriş yapabilirsiniz.\n\nİyi çalışmalar.`;
-
-        const body = encodeURIComponent(bodyText);
-
-        // Kullanıcının varsayılan e-posta uygulamasını (Outlook, Gmail vb.) açar
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
-    }
 </body>
 </html>
