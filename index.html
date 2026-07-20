@@ -199,9 +199,9 @@
         </div>
     </div>
 
-    <!-- Diğer Detay Görünümleri (Gizli Başlangıç) -->
+    <!-- Diğer Detay Görünümleri -->
     <div id="debts-detail-view" class="space-y-4 hidden view-section">
-        <div class="flex justify-between items-center"><button onclick="switchView('dashboard')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Geri Dön</button><div class="flex gap-2"><select id="debts-filter-contact" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderDebtsView()"></select><button onclick="generatePDF('debts-pdf-container', 'Verilen_Borclar')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
+        <div class="flex justify-between items-center"><button onclick="switchView('dashboard')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Geri Dön</button><div class="flex gap-2"><select id="debts-filter-currency" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderDebtsView()"><option value="ALL">Tüm Dövizler</option><option value="TRY">TL</option><option value="USD">Dolar</option><option value="EUR">Euro</option><option value="CHF">Frank</option></select><select id="debts-filter-contact" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderDebtsView()"></select><button onclick="generatePDF('debts-pdf-container', 'Verilen_Borclar')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
         <div id="debts-pdf-container" class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
             <h2 class="text-lg font-bold">Verilen Borçlar Raporu</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="debts-currency-totals"></div>
@@ -210,7 +210,7 @@
     </div>
 
     <div id="inflows-detail-view" class="space-y-4 hidden view-section">
-        <div class="flex justify-between items-center"><button onclick="switchView('dashboard')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Geri Dön</button><div class="flex gap-2"><select id="inflows-filter-contact" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderInflowsView()"></select><button onclick="generatePDF('inflows-pdf-container', 'Nakit_Girisleri')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
+        <div class="flex justify-between items-center"><button onclick="switchView('dashboard')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Geri Dön</button><div class="flex gap-2"><select id="inflows-filter-currency" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderInflowsView()"><option value="ALL">Tüm Dövizler</option><option value="TRY">TL</option><option value="USD">Dolar</option><option value="EUR">Euro</option><option value="CHF">Frank</option></select><select id="inflows-filter-contact" class="border border-slate-200 bg-white rounded-xl px-2 py-1.5 text-xs outline-none" onchange="renderInflowsView()"></select><button onclick="generatePDF('inflows-pdf-container', 'Nakit_Girisleri')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
         <div id="inflows-pdf-container" class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
             <h2 class="text-lg font-bold">Nakit Girişleri Raporu</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="inflows-currency-totals"></div>
@@ -281,7 +281,34 @@
 </div>
 
 <script>
-    // --- SIFIRLANMIŞ STATE (VERİLER BOŞ) ---
+    // --- GİRİŞ KONTROLÜ VE VERİTABANI BAĞLANTISI ---
+    const allowedUsers = [
+        { username: "Mehmet", password: "1086" },
+        { username: "Serhat", password: "0211" }
+    ];
+
+    function handleLogin() {
+        const u = document.getElementById('login-username').value.trim();
+        const p = document.getElementById('login-password').value.trim();
+        
+        const isValid = allowedUsers.some(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
+
+        if(isValid) {
+            document.getElementById('login-overlay').style.display = 'none';
+            sessionStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('currentUser', u);
+        } else {
+            alert("Kullanıcı adı veya şifre hatalı!");
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        if(sessionStorage.getItem('isLoggedIn') === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+        loadDataFromCloud();
+    });
+
     let accounts = [
         { id: 'KASA', name: 'Merkez Kasa', type: 'cash', color: 'emerald' },
         { id: 'GARANTI', name: 'Garanti Bankası', type: 'bank', color: 'blue' },
@@ -302,6 +329,34 @@
     let currentDetailContactId = null;
     let editingContactId = null; 
     let monthlyChartInstance = null;
+
+    // --- BULUT (API) SENKRONİZASYONU ---
+    async function loadDataFromCloud() {
+        try {
+            const response = await fetch('/api');
+            const result = await response.json();
+            if (result.success && result.data) {
+                transactions = result.data.map(item => item.data).filter(Boolean);
+                // Eğer veritabanında cariler veya hesaplar da saklandıysa buradan çekilebilir, şimdilik işlemler ana veri kaynağıdır.
+            }
+        } catch (e) {
+            console.error("Buluttan veri çekilemedi:", e);
+        }
+        initializeSelects();
+        updateDashboard();
+    }
+
+    async function saveDataToCloud(newDataObj) {
+        try {
+            await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: newDataObj })
+            });
+        } catch (e) {
+            console.error("Buluta kaydedilemedi:", e);
+        }
+    }
 
     const formatMoney = (amount, currency, showSymbol = true) => {
         const formatted = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
@@ -625,8 +680,14 @@
         const category = type === 'OUT' ? document.getElementById('form-category').value : null;
 
         if (!amount || !date || !desc) return alert('Tutar, tarih ve açıklama alanlarını doldurun.');
-        transactions.push({ id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category });
-        closeModal('transactionModal'); updateDashboard();
+        
+        const newTransaction = { id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category };
+        
+        transactions.push(newTransaction);
+        saveDataToCloud(newTransaction); // Buluta gönder
+        
+        closeModal('transactionModal'); 
+        updateDashboard();
     }
 
     function saveBank() {
@@ -635,37 +696,6 @@
         accounts.push({ id: 'BANK_' + Date.now(), name: name, type: 'bank', color: 'slate' });
         initializeSelects(); updateDashboard(); closeModal('bankModal');
     }
-
-    initializeSelects(); updateDashboard();
 </script>
-   <script>
-    // --- ÇOKLU KULLANICI GİRİŞ KONTROLÜ ---
-    const allowedUsers = [
-        { username: "Mehmet", password: "1086" },
-        { username: "Serhat", password: "0211" }
-    ];
-
-    function handleLogin() {
-        const u = document.getElementById('login-username').value.trim();
-        const p = document.getElementById('login-password').value.trim();
-        
-        const isValid = allowedUsers.some(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
-
-        if(isValid) {
-            document.getElementById('login-overlay').style.display = 'none';
-            sessionStorage.setItem('isLoggedIn', 'true');
-            sessionStorage.setItem('currentUser', u);
-        } else {
-            alert("Kullanıcı adı veya şifre hatalı!");
-        }
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        if(sessionStorage.getItem('isLoggedIn') === 'true') {
-            document.getElementById('login-overlay').style.display = 'none';
-        }
-    });
-
-    // --- DEVAMI MEVCUT KODLAR... ---
 </body>
 </html>
