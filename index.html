@@ -174,10 +174,10 @@
                 </div>
             </div>
             <div class="overflow-x-auto max-h-96">
-                <table class="w-full text-left border-collapse min-w-[600px]">
+                <table class="w-full text-left border-collapse min-w-[700px]">
                     <thead class="sticky top-0 z-10 bg-white">
                         <tr class="border-b border-slate-100 text-slate-400 text-[11px] font-medium uppercase">
-                            <th class="p-3">Tarih</th><th class="p-3">Hesap</th><th class="p-3">İşlem</th><th class="p-3">Kategori</th><th class="p-3">Kişi / Açıklama</th><th class="p-3 text-right">Tutar</th>
+                            <th class="p-3">Tarih</th><th class="p-3">Hesap</th><th class="p-3">İşlem</th><th class="p-3">Kategori</th><th class="p-3">Kişi / Açıklama</th><th class="p-3 text-right">Tutar</th><th class="p-3 text-center">Ayarlar</th>
                         </tr>
                     </thead>
                     <tbody id="transaction-tbody" class="divide-y divide-slate-50 text-xs md:text-sm"></tbody>
@@ -230,7 +230,7 @@
     </div>
 
     <div id="contact-detail-view" class="space-y-4 hidden view-section">
-        <div class="flex justify-between items-center"><button onclick="switchView('contacts')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Carilere Dön</button><div class="flex gap-2"><button onclick="editCurrentContact()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium">Düzenle</button><button onclick="generatePDF('contact-pdf-container', 'Cari_Ekstre')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
+        <div class="flex justify-between items-center"><button onclick="switchView('contacts')" class="text-slate-500 text-xs md:text-sm font-medium flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></div>Carilere Dön</button><div class="flex gap-2"><button onclick="generatePDF('contact-pdf-container', 'Cari_Ekstre')" class="bg-rose-50 text-rose-600 px-3 py-1.5 rounded-xl text-xs font-medium border border-rose-100"><i class="fa-solid fa-file-pdf"></i> PDF</button></div></div>
         <div id="contact-pdf-container" class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
             <h2 id="cd-name" class="text-lg font-bold">Cari Adı</h2>
             <div id="cd-banks" class="bg-slate-50 p-3 rounded-xl text-xs space-y-1"></div>
@@ -243,7 +243,7 @@
 <!-- Modallar -->
 <div id="transactionModal" class="modal fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-white"><h3 class="text-md font-bold text-slate-800">Yeni İşlem Ekle</h3><button onclick="closeModal('transactionModal')" class="text-slate-400 bg-slate-50 w-7 h-7 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="flex justify-between items-center p-4 border-b border-slate-100 bg-white"><h3 id="transactionModalTitle" class="text-md font-bold text-slate-800">Yeni İşlem Ekle</h3><button onclick="closeModal('transactionModal')" class="text-slate-400 bg-slate-50 w-7 h-7 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button></div>
         <div class="p-4 md:p-6 space-y-3 overflow-y-auto bg-slate-50/30 text-xs md:text-sm">
             <div><label class="block font-semibold text-slate-500 mb-1 uppercase">İşlem Türü</label><select id="form-type" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl outline-none" onchange="toggleFormFields()"><option value="IN">Giriş (Tahsilat / Yatırma)</option><option value="OUT">Çıkış (Harcama / Ödeme)</option><option value="TRANSFER">Transfer (Hesaplar Arası)</option></select></div>
             <div id="account-source-div"><label id="lbl-source" class="block font-semibold text-slate-500 mb-1 uppercase">Hesap</label><select id="form-source-account" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl outline-none"></select></div>
@@ -316,6 +316,7 @@
 
     let contacts = [];
     let transactions = [];
+    let editingTransactionId = null; // DÜZENLEME İÇİN EKLENEN YENİ DEĞİŞKEN
 
     const currencies = ['TRY', 'USD', 'EUR', 'CHF'];
     const currencySymbols = { 'TRY': '₺', 'USD': '$', 'EUR': '€', 'CHF': 'CHF' };
@@ -323,13 +324,11 @@
 
     let currentDetailAccountId = null;
     let currentDetailContactId = null;
-    let editingContactId = null; 
     let monthlyChartInstance = null;
 
-    // === GÜNCELLENEN VERİ GETİRME FONKSİYONU ===
     async function loadDataFromCloud() {
         try {
-            const response = await fetch('/api');
+            const response = await fetch('/api/index');
             const result = await response.json();
             
             if (Array.isArray(result)) {
@@ -347,8 +346,9 @@
     }
 
     async function saveDataToCloud(newDataObj) {
+        // Bu kısım şu an sadece Carileri Vercel'e atıyor, İşlemler için ileride güncelleyeceğiz.
         try {
-            await fetch('/api', {
+            await fetch('/api/index', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data: newDataObj })
@@ -588,14 +588,27 @@
         filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if(filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">Henüz işlem hareketi yok.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400">Henüz işlem hareketi yok.</td></tr>';
             return;
         }
 
         filtered.forEach(t => {
             let typeBadge = t.type === 'IN' ? 'GİRİŞ' : (t.type === 'OUT' ? 'ÇIKIŞ' : 'TRANSFER');
             let color = t.type === 'IN' ? 'text-emerald-500' : (t.type === 'OUT' ? 'text-rose-500' : 'text-blue-500');
-            tbody.innerHTML += `<tr class="hover:bg-slate-50/50"><td class="p-3 text-xs">${t.date}</td><td class="p-3 text-xs">${getAccountName(t.account)}</td><td class="p-3 text-xs font-bold ${color}">${typeBadge}</td><td class="p-3 text-xs">${t.category||'-'}</td><td class="p-3 text-xs">${getContactName(t.contactId)} - ${t.desc}</td><td class="p-3 text-right font-bold ${color}">${formatMoney(t.amount, t.currency)}</td></tr>`;
+            let contactText = getContactName(t.contactId);
+            
+            tbody.innerHTML += `<tr class="hover:bg-slate-50/50">
+                <td class="p-3 text-xs">${t.date}</td>
+                <td class="p-3 text-xs">${getAccountName(t.account)}</td>
+                <td class="p-3 text-xs font-bold ${color}">${typeBadge}</td>
+                <td class="p-3 text-xs">${t.category||'-'}</td>
+                <td class="p-3 text-xs">${contactText ? contactText + ' - ' : ''}${t.desc}</td>
+                <td class="p-3 text-right font-bold ${color}">${formatMoney(t.amount, t.currency)}</td>
+                <td class="p-3 text-center whitespace-nowrap">
+                    <button onclick="editTransaction(${t.id})" class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 w-7 h-7 rounded-lg inline-flex items-center justify-center mr-1" title="Düzenle"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="deleteTransaction(${t.id})" class="text-rose-500 hover:text-rose-700 bg-rose-50 w-7 h-7 rounded-lg inline-flex items-center justify-center" title="Sil"><i class="fa-solid fa-trash text-xs"></i></button>
+                </td>
+            </tr>`;
         });
     }
 
@@ -674,8 +687,49 @@
         container.innerHTML += `<div class="flex gap-2 bank-row items-center"><input type="text" placeholder="Banka" value="${bankName}" class="bank-name-input w-1/3 p-2 bg-white border rounded-xl text-xs"><input type="text" placeholder="IBAN" value="${iban}" class="bank-iban-input w-2/3 p-2 bg-white border rounded-xl text-xs"><button onclick="this.parentElement.remove()" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></div>`;
     }
 
-    function openTransactionModal() { document.getElementById('form-date').valueAsDate = new Date(); document.getElementById('transactionModal').classList.add('active'); toggleFormFields(); }
-    function openContactModal() { editingContactId = null; document.getElementById('contact-name').value = ''; document.getElementById('contact-bank-list').innerHTML = ''; addBankRowToContact(); document.getElementById('contactModal').classList.add('active'); }
+    // YENİ İŞLEM EKLEME VE DÜZENLEME PENCERESİNİ AÇMA
+    function openTransactionModal() { 
+        editingTransactionId = null; 
+        document.getElementById('transactionModalTitle').innerText = 'Yeni İşlem Ekle';
+        document.getElementById('form-amount').value = '';
+        document.getElementById('form-desc').value = '';
+        document.getElementById('form-date').valueAsDate = new Date(); 
+        document.getElementById('transactionModal').classList.add('active'); 
+        toggleFormFields(); 
+    }
+
+    // İŞLEM SİLME FONKSİYONU
+    function deleteTransaction(id) {
+        if(!confirm("Bu işlemi tamamen silmek istediğinize emin misiniz?")) return;
+        transactions = transactions.filter(t => t.id !== id);
+        // İleride veritabanından silme kodunu buraya ekleyeceğiz.
+        updateDashboard();
+    }
+
+    // İŞLEM DÜZENLEME FONKSİYONU
+    function editTransaction(id) {
+        editingTransactionId = id;
+        const t = transactions.find(x => x.id === id);
+        if(!t) return;
+
+        document.getElementById('form-type').value = t.type;
+        toggleFormFields();
+
+        document.getElementById('form-source-account').value = t.account;
+        if(t.type === 'TRANSFER') document.getElementById('form-target-account').value = t.targetAccount;
+        if(t.type !== 'TRANSFER') document.getElementById('form-contact').value = t.contactId || "";
+        if(t.type === 'OUT') document.getElementById('form-category').value = t.category || "";
+
+        document.getElementById('form-currency').value = t.currency;
+        document.getElementById('form-amount').value = t.amount;
+        document.getElementById('form-date').value = t.date;
+        document.getElementById('form-desc').value = t.desc;
+
+        document.getElementById('transactionModalTitle').innerText = "İşlemi Düzenle";
+        document.getElementById('transactionModal').classList.add('active');
+    }
+
+    function openContactModal() { document.getElementById('contact-name').value = ''; document.getElementById('contact-bank-list').innerHTML = ''; addBankRowToContact(); document.getElementById('contactModal').classList.add('active'); }
     function openBankModal() { document.getElementById('bankModal').classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
@@ -686,7 +740,6 @@
         document.getElementById('category-div').style.display = type === 'OUT' ? 'block' : 'none';
     }
 
-    // === GÜNCELLENEN CARİ KAYDETME FONKSİYONU ===
     async function saveContact() {
         const name = document.getElementById('contact-name').value;
         if (!name) return alert('Ad Soyad zorunludur.');
@@ -704,7 +757,7 @@
 
         // 2. BULUT KÖPRÜSÜ: Veritabanına (Neon) Gönder
         try {
-            await fetch('/api', {
+            await fetch('/api/index', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ isim: name, bakiye: 0 }) 
@@ -716,7 +769,6 @@
         initializeSelects(); 
         closeModal('contactModal');
         
-        // Eğer cari listesi ekranındaysak listeyi tazele
         if (document.getElementById('contacts-list-view').style.display === 'block') {
             renderContactsList();
         }
@@ -735,10 +787,17 @@
 
         if (!amount || !date || !desc) return alert('Tutar, tarih ve açıklama alanlarını doldurun.');
         
-        const newTransaction = { id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category };
-        
-        transactions.push(newTransaction);
-        saveDataToCloud(newTransaction);
+        if (editingTransactionId) {
+            // VAR OLAN İŞLEMİ GÜNCELLE
+            const index = transactions.findIndex(t => t.id === editingTransactionId);
+            if(index > -1) {
+                transactions[index] = { ...transactions[index], date, type, account, targetAccount, currency, amount, desc, contactId, category };
+            }
+        } else {
+            // YENİ İŞLEM OLUŞTUR
+            const newTransaction = { id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category };
+            transactions.push(newTransaction);
+        }
         
         closeModal('transactionModal'); 
         updateDashboard();
