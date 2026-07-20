@@ -697,5 +697,46 @@
         initializeSelects(); updateDashboard(); closeModal('bankModal');
     }
 </script>
+    function sendManualEmail() {
+        // O günün tarihini al (Örn: 20.07.2026)
+        const today = new Date().toLocaleDateString('tr-TR');
+        
+        // E-posta konusu
+        const subject = encodeURIComponent(`Finansal Durum - ${today}`);
+
+        // Genel varlık özetini hesapla
+        let totalWealthTRY = 0;
+        const balances = {};
+        accounts.forEach(acc => { balances[acc.id] = { 'TRY': 0, 'USD': 0, 'EUR': 0, 'CHF': 0 }; });
+
+        transactions.forEach(t => {
+            if (t.type === 'IN') balances[t.account][t.currency] += t.amount;
+            else if (t.type === 'OUT') balances[t.account][t.currency] -= t.amount;
+            else if (t.type === 'TRANSFER') {
+                balances[t.account][t.currency] -= t.amount;
+                if(balances[t.targetAccount]) balances[t.targetAccount][t.currency] += t.amount;
+            }
+        });
+
+        accounts.forEach(acc => {
+            currencies.forEach(cur => {
+                totalWealthTRY += balances[acc.id][cur] * exchangeRates[cur];
+            });
+        });
+
+        // Mailin içine yazılacak şık metin taslağı
+        let bodyText = `Merhaba,\n\n${today} tarihi itibarıyla güncel finansal durum özetimiz aşağıdadır:\n\n`;
+        bodyText += `--- TOPLAM VARLIKLAR ---\n`;
+        bodyText += `• TL Karşılığı: ${formatMoney(totalWealthTRY, 'TRY')}\n`;
+        bodyText += `• Dolar Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['USD'], 'USD')}\n`;
+        bodyText += `• Euro Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['EUR'], 'EUR')}\n`;
+        bodyText += `• Frank Karşılığı: ${formatMoney(totalWealthTRY / exchangeRates['CHF'], 'CHF')}\n\n`;
+        bodyText += `Son Eklenen İşlemler ve Detaylar için sisteme giriş yapabilirsiniz.\n\nİyi çalışmalar.`;
+
+        const body = encodeURIComponent(bodyText);
+
+        // Kullanıcının varsayılan e-posta uygulamasını (Outlook, Gmail vb.) açar
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
 </body>
 </html>
