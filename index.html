@@ -326,12 +326,18 @@
     let editingContactId = null; 
     let monthlyChartInstance = null;
 
+    // === GÜNCELLENEN VERİ GETİRME FONKSİYONU ===
     async function loadDataFromCloud() {
         try {
             const response = await fetch('/api');
             const result = await response.json();
-            if (result.success && result.data) {
-                transactions = result.data.map(item => item.data).filter(Boolean);
+            
+            if (Array.isArray(result)) {
+                contacts = result.map(dbCari => ({
+                    id: dbCari.id,
+                    name: dbCari.isim,
+                    banks: []
+                }));
             }
         } catch (e) {
             console.error("Buluttan veri çekilemedi:", e);
@@ -680,17 +686,40 @@
         document.getElementById('category-div').style.display = type === 'OUT' ? 'block' : 'none';
     }
 
-    function saveContact() {
+    // === GÜNCELLENEN CARİ KAYDETME FONKSİYONU ===
+    async function saveContact() {
         const name = document.getElementById('contact-name').value;
         if (!name) return alert('Ad Soyad zorunludur.');
+        
         let contactBanks = [];
         document.querySelectorAll('.bank-row').forEach(row => {
             const bName = row.querySelector('.bank-name-input').value.trim();
             const bIban = row.querySelector('.bank-iban-input').value.trim();
             if (bName || bIban) contactBanks.push({ name: bName, iban: bIban });
         });
-        contacts.push({ id: Date.now(), name, banks: contactBanks });
-        initializeSelects(); closeModal('contactModal');
+
+        // 1. Önce arayüze ekle (Geçici)
+        const yeniCari = { id: Date.now(), name, banks: contactBanks };
+        contacts.push(yeniCari);
+
+        // 2. BULUT KÖPRÜSÜ: Veritabanına (Neon) Gönder
+        try {
+            await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isim: name, bakiye: 0 }) 
+            });
+        } catch (e) {
+            console.error("Cari veritabanına kaydedilemedi:", e);
+        }
+
+        initializeSelects(); 
+        closeModal('contactModal');
+        
+        // Eğer cari listesi ekranındaysak listeyi tazele
+        if (document.getElementById('contacts-list-view').style.display === 'block') {
+            renderContactsList();
+        }
     }
 
     function saveTransaction() {
