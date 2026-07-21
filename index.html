@@ -316,7 +316,7 @@
 
     let contacts = [];
     let transactions = [];
-    let editingTransactionId = null; // DÜZENLEME İÇİN EKLENEN YENİ DEĞİŞKEN
+    let editingTransactionId = null; 
 
     const currencies = ['TRY', 'USD', 'EUR', 'CHF'];
     const currencySymbols = { 'TRY': '₺', 'USD': '$', 'EUR': '€', 'CHF': 'CHF' };
@@ -327,35 +327,31 @@
     let monthlyChartInstance = null;
 
     async function loadDataFromCloud() {
+        // İşlemleri ve yeni eklenen bankaları kaybetmemek için tarayıcı hafızasından geri yüklüyoruz
+        const savedTransactions = localStorage.getItem('finans_transactions');
+        if(savedTransactions) transactions = JSON.parse(savedTransactions);
+
+        const savedAccounts = localStorage.getItem('finans_accounts');
+        if(savedAccounts) accounts = JSON.parse(savedAccounts);
+
         try {
-            const response = await fetch('/api/index');
-            const result = await response.json();
-            
-            if (Array.isArray(result)) {
-                contacts = result.map(dbCari => ({
-                    id: dbCari.id,
-                    name: dbCari.isim,
-                    banks: []
-                }));
+            // HATA DÜZELTİLDİ: Adres artık doğru şekilde /api
+            const response = await fetch('/api');
+            if(response.ok) {
+                const result = await response.json();
+                if (Array.isArray(result)) {
+                    contacts = result.map(dbCari => ({
+                        id: dbCari.id,
+                        name: dbCari.isim,
+                        banks: []
+                    }));
+                }
             }
         } catch (e) {
             console.error("Buluttan veri çekilemedi:", e);
         }
         initializeSelects();
         updateDashboard();
-    }
-
-    async function saveDataToCloud(newDataObj) {
-        // Bu kısım şu an sadece Carileri Vercel'e atıyor, İşlemler için ileride güncelleyeceğiz.
-        try {
-            await fetch('/api/index', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: newDataObj })
-            });
-        } catch (e) {
-            console.error("Buluta kaydedilemedi:", e);
-        }
     }
 
     const formatMoney = (amount, currency, showSymbol = true) => {
@@ -687,7 +683,6 @@
         container.innerHTML += `<div class="flex gap-2 bank-row items-center"><input type="text" placeholder="Banka" value="${bankName}" class="bank-name-input w-1/3 p-2 bg-white border rounded-xl text-xs"><input type="text" placeholder="IBAN" value="${iban}" class="bank-iban-input w-2/3 p-2 bg-white border rounded-xl text-xs"><button onclick="this.parentElement.remove()" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></div>`;
     }
 
-    // YENİ İŞLEM EKLEME VE DÜZENLEME PENCERESİNİ AÇMA
     function openTransactionModal() { 
         editingTransactionId = null; 
         document.getElementById('transactionModalTitle').innerText = 'Yeni İşlem Ekle';
@@ -698,15 +693,16 @@
         toggleFormFields(); 
     }
 
-    // İŞLEM SİLME FONKSİYONU
+    // YENİ: İŞLEM SİLME VE KAYDETME
     function deleteTransaction(id) {
         if(!confirm("Bu işlemi tamamen silmek istediğinize emin misiniz?")) return;
         transactions = transactions.filter(t => t.id !== id);
-        // İleride veritabanından silme kodunu buraya ekleyeceğiz.
+        
+        // Silinen işlemi hafızadan da uçur
+        localStorage.setItem('finans_transactions', JSON.stringify(transactions));
         updateDashboard();
     }
 
-    // İŞLEM DÜZENLEME FONKSİYONU
     function editTransaction(id) {
         editingTransactionId = id;
         const t = transactions.find(x => x.id === id);
@@ -751,13 +747,12 @@
             if (bName || bIban) contactBanks.push({ name: bName, iban: bIban });
         });
 
-        // 1. Önce arayüze ekle (Geçici)
         const yeniCari = { id: Date.now(), name, banks: contactBanks };
         contacts.push(yeniCari);
 
-        // 2. BULUT KÖPRÜSÜ: Veritabanına (Neon) Gönder
         try {
-            await fetch('/api/index', {
+            // HATA DÜZELTİLDİ: Adres artık doğru şekilde /api
+            await fetch('/api', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ isim: name, bakiye: 0 }) 
@@ -788,17 +783,18 @@
         if (!amount || !date || !desc) return alert('Tutar, tarih ve açıklama alanlarını doldurun.');
         
         if (editingTransactionId) {
-            // VAR OLAN İŞLEMİ GÜNCELLE
             const index = transactions.findIndex(t => t.id === editingTransactionId);
             if(index > -1) {
                 transactions[index] = { ...transactions[index], date, type, account, targetAccount, currency, amount, desc, contactId, category };
             }
         } else {
-            // YENİ İŞLEM OLUŞTUR
             const newTransaction = { id: Date.now(), date, type, account, targetAccount, currency, amount, desc, contactId, category };
             transactions.push(newTransaction);
         }
         
+        // YENİ: Kayıp yaşamamak için işlemleri doğrudan tarayıcı hafızasına güvenle yaz
+        localStorage.setItem('finans_transactions', JSON.stringify(transactions));
+
         closeModal('transactionModal'); 
         updateDashboard();
     }
@@ -807,6 +803,10 @@
         const name = document.getElementById('bank-name').value;
         if (!name) return alert('Banka adı zorunludur.');
         accounts.push({ id: 'BANK_' + Date.now(), name: name, type: 'bank', color: 'slate' });
+        
+        // YENİ: Bankaları kaybetmemek için hafızaya yaz
+        localStorage.setItem('finans_accounts', JSON.stringify(accounts));
+        
         initializeSelects(); updateDashboard(); closeModal('bankModal');
     }
 </script>
